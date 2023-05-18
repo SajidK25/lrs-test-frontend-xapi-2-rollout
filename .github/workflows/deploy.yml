@@ -18,7 +18,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: <your-aws-region>
+          aws-region: eu-central-1
 
       - name: Install dependencies
         run: |
@@ -96,7 +96,7 @@ jobs:
           host: 3.66.168.137
           username: root
           key: ${{ secrets.EC2_INSTANCE_SSH_PRIVATE_KEY }}
-          port: <your-ec2-instance-ssh-port>
+          port: 22
           script: |
             git clone https://github.com/SajidK25/lrs-test-frontend-xapi-2-rollout.git app
             cd app
