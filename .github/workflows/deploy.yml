@@ -1,0 +1,103 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Install dependencies
+        run: |
+          # Simple script to install the PERLS architecture requirements
+          function announce() {
+            echo ""
+            echo "#====================================================#"
+            echo "#"
+            echo "#            Installing $1"
+            echo "#"
+            echo "#====================================================#"
+          }
+
+          # Curl
+          #
+          announce "Curl"
+
+          if ! [ -x "$(command -v curl)" ]; then
+            
+            # Curl is easy
+            apt-get install curl
+            
+          else
+            echo "Skipping, Curl already installed!"
+          fi
+
+          # Docker
+          #
+          announce "Docker"
+
+          if ! [ -x "$(command -v docker)" ]; then
+            
+            # Docker is a bit complicated
+            #
+            # Add the GPG Key
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            
+            # Add the Docker repository to our APT sources
+            add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            
+            # With those added, update our packages
+            apt-get update
+
+            # Since we're up to date, get docker
+            apt-get install -y docker-ce
+          else
+            echo "Skipping, docker already installed!"
+          fi
+
+
+          # Docker-Compose
+          #
+          announce "Docker-Compose"
+
+          if ! [ -x "$(command -v docker-compose)" ]; then
+            
+            # Docker-Compose is also complicated
+            #
+            # Add the GPG Key
+            curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+            
+            # Make sure it's executable
+            chmod +x /usr/local/bin/docker-compose
+
+          else
+            echo "Skipping, docker-compose already installed!"
+          fi
+
+          echo ""
+
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: 3.66.168.137
+          username: root
+          key: ${{ secrets.EC2_INSTANCE_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            git clone https://github.com/SajidK25/lrs-test-frontend-xapi-2-rollout.git app
+            cd app
+            docker-compose up -d
